@@ -8,7 +8,7 @@ ENV LAMBDA_RUNTIME_DIR=/var/runtime
 
 FROM amz-linux as python-layer
 RUN yum -y update
-RUN amazon-linux-extras install epel -y
+RUN amazon-linux-extras install -y epel
 RUN yum -y groupinstall "Development Tools"
 RUN yum install -y \
 wget \
@@ -38,7 +38,13 @@ RUN cd $(mktemp -d) && \
 wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz && \
 tar -xf openssl-${OPENSSL_VERSION}.tar.gz && \
 cd openssl-${OPENSSL_VERSION} && \
-./config --prefix=/var/lang && \
+./config \
+--prefix=/var/lang \
+--openssldir=/etc/pki/tls \
+zlib-dynamic \
+zlib \
+shared \
+-Wl,-rpath=/var/lang/lib -Wl,--enable-new-dtags && \
 make -j $(nproc) && \
 make install
 
@@ -49,6 +55,7 @@ wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION
 tar -xf Python-${PYTHON_VERSION}.tgz && \
 cd Python-${PYTHON_VERSION} && \
 ./configure \
+--with-openssl-rpath=auto \
 --with-openssl=/var/lang \
 --with-ensurepip=upgrade \
 --enable-shared \
@@ -90,6 +97,7 @@ RUN chmod +x layer_bootstrap
 FROM amz-linux as base-layer
 
 WORKDIR /var/task
+COPY --from=python-layer /etc/pki/tls /etc/pki/tls
 COPY --from=python-layer /var/runtime /var/runtime
 COPY --from=python-layer /var/lang /var/lang
 COPY --from=python-layer /lambda-entrypoint.sh /lambda-entrypoint.sh
