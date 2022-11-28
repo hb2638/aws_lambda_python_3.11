@@ -24,7 +24,7 @@ readline-devel \
 ncurses-devel \
 gdbm-devel \
 pkgconfig \
-lcov \-
+lcov \
 gdb \
 yum-utils \
 xz-lzma-compat \
