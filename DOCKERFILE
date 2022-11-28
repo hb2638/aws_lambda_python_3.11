@@ -1,5 +1,4 @@
 FROM amazonlinux:2 as amz-linux
-VOLUME /var/lib/docker
 ENV LANG=en_US.UTF-8
 ENV TZ=:/etc/localtime
 ENV PATH=/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin
@@ -7,11 +6,31 @@ ENV LD_LIBRARY_PATH=/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/li
 ENV LAMBDA_TASK_ROOT=/var/task
 ENV LAMBDA_RUNTIME_DIR=/var/runtime
 
-
 FROM amz-linux as python-layer
 RUN yum -y update
+RUN amazon-linux-extras install epel -y
 RUN yum -y groupinstall "Development Tools"
-RUN yum install -y wget dos2unix libffi-devel bzip2-devel
+RUN yum install -y \
+wget \
+dos2unix \
+libffi-devel \
+bzip2-devel \
+sqlite-devel \
+zlib-devel \
+uuid-devel \
+tk-devel \
+xz-devel \
+readline-devel \
+ncurses-devel \
+gdbm-devel \
+pkgconfig \
+lcov \-
+gdb \
+yum-utils \
+xz-lzma-compat \
+libnsl2-devel \
+libxcrypt-devel \
+RUN yum-builddep -y python3
 
 #install openssl
 ARG OPENSSL_VERSION=1.1.1q
@@ -20,7 +39,7 @@ wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz && \
 tar -xf openssl-${OPENSSL_VERSION}.tar.gz && \
 cd openssl-${OPENSSL_VERSION} && \
 ./config --prefix=/var/lang && \
-make -j$(nproc) && \
+make -j $(nproc) && \
 make install
 
 # install python
@@ -29,8 +48,19 @@ RUN cd $(mktemp -d) && \
 wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
 tar -xf Python-${PYTHON_VERSION}.tgz && \
 cd Python-${PYTHON_VERSION} && \
-./configure --with-openssl=/var/lang --with-ensurepip=upgrade --enable-shared --with-lto=full --prefix=/var/lang --enable-optimizations  --with-system-ffi --with-computed-gotos --enable-loadable-sqlite-extensions && \
-make -j$(nproc) && \
+./configure \
+--with-openssl=/var/lang \
+--with-ensurepip=upgrade \
+--enable-shared \
+--with-lto=full \
+--prefix=/var/lang \
+--enable-optimizations \
+--with-system-ffi \
+--with-computed-gotos \
+--enable-loadable-sqlite-extensions \
+LDFLAGS="-Wl,-rpath=/var/lang/lib" \
+&& \
+make -j $(nproc) && \
 make install
 
 # Add extra files
