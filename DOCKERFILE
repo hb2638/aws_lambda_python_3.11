@@ -29,7 +29,7 @@ gdb \
 yum-utils \
 xz-lzma-compat \
 libnsl2-devel \
-libxcrypt-devel \
+libxcrypt-devel
 RUN yum-builddep -y python3
 
 #install openssl
